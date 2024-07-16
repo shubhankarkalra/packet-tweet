@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tweet Screenshot Downloader</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #1DA1F2;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        #status {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Tweet Screenshot Downloader</h1>
+    <input type="text" id="tweetUrl" placeholder="Enter tweet URL">
+    <button onclick="getScreenshot()">Get Screenshot</button>
+    <div id="status"></div>
+
+    <script>
+        function getScreenshot() {
+            const tweetUrl = document.getElementById('tweetUrl').value;
+            const statusDiv = document.getElementById('status');
+            statusDiv.textContent = 'Processing...';
+
+            // Extract tweet ID from URL
+            const tweetId = tweetUrl.split('/').pop().split('?')[0];
+
+            fetch(`/api/tweet/${tweetId}/screenshot`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.blob();
+                })
+                .then(blob => {
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.style.display = 'none';
+                    a.href = url;
+                    a.download = `tweet_${tweetId}.png`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    statusDiv.textContent = 'Screenshot downloaded!';
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    statusDiv.textContent = 'Error: ' + error.message;
+                });
+        }
+    </script>
+</body>
+</html>
