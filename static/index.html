@@ -23,7 +23,7 @@
             border-radius: 10px;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
             text-align: center;
-            max-width: 400px;
+            max-width: 600px;
             width: 100%;
             margin-bottom: 2rem;
         }
@@ -47,6 +47,7 @@
             border-radius: 4px;
             cursor: pointer;
             transition: background-color 0.3s;
+            margin: 0.5rem;
         }
         button:hover {
             background-color: #3D0069; /* Darker indigo */
@@ -54,6 +55,17 @@
         #status {
             margin-top: 1rem;
             font-weight: bold;
+        }
+        #screenshotContainer {
+            margin-top: 1rem;
+            max-width: 100%;
+            overflow: hidden;
+        }
+        #screenshotImage {
+            max-width: 100%;
+            height: auto;
+            border: 1px solid #ccc;
+            border-radius: 4px;
         }
         .footer {
             text-align: center;
@@ -69,6 +81,10 @@
         <input type="text" id="tweetUrl" placeholder="Paste tweet URL here">
         <button onclick="getScreenshot()">Capture Tweet</button>
         <div id="status"></div>
+        <div id="screenshotContainer" style="display: none;">
+            <img id="screenshotImage" alt="Tweet Screenshot">
+            <button onclick="downloadScreenshot()">Download Screenshot</button>
+        </div>
     </div>
 
     <div class="footer">
@@ -76,10 +92,14 @@
     </div>
 
     <script>
+        let screenshotBlob;
+
         function getScreenshot() {
             const tweetUrl = document.getElementById('tweetUrl').value;
             const statusDiv = document.getElementById('status');
+            const screenshotContainer = document.getElementById('screenshotContainer');
             statusDiv.textContent = 'Capturing tweet...';
+            screenshotContainer.style.display = 'none';
 
             // Extract tweet ID from URL
             const tweetId = tweetUrl.split('/').pop().split('?')[0];
@@ -92,20 +112,30 @@
                     return response.blob();
                 })
                 .then(blob => {
+                    screenshotBlob = blob;
                     const url = window.URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.style.display = 'none';
-                    a.href = url;
-                    a.download = `tweet_${tweetId}.png`;
-                    document.body.appendChild(a);
-                    a.click();
-                    window.URL.revokeObjectURL(url);
-                    statusDiv.textContent = 'Tweet captured and downloaded!';
+                    const img = document.getElementById('screenshotImage');
+                    img.src = url;
+                    screenshotContainer.style.display = 'block';
+                    statusDiv.textContent = 'Tweet captured! You can now download the screenshot.';
                 })
                 .catch(error => {
                     console.error('Error:', error);
                     statusDiv.textContent = 'Error: ' + error.message;
                 });
+        }
+
+        function downloadScreenshot() {
+            if (screenshotBlob) {
+                const url = window.URL.createObjectURL(screenshotBlob);
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                a.download = 'tweet_screenshot.png';
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+            }
         }
     </script>
 </body>
