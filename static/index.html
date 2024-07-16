@@ -3,42 +3,83 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tweet Screenshot Downloader</title>
+    <title>TweetCapture</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
-            max-width: 800px;
-            margin: 0 auto;
+            font-family: 'Arial', sans-serif;
+            background-color: #E6E6FA; /* Light lilac */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
             padding: 20px;
+            box-sizing: border-box;
+        }
+        .container {
+            background-color: white;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            max-width: 400px;
+            width: 100%;
+            margin-bottom: 2rem;
+        }
+        h1 {
+            color: #4B0082; /* Indigo */
+            margin-bottom: 1.5rem;
         }
         input[type="text"] {
             width: 100%;
             padding: 10px;
-            margin-bottom: 10px;
+            margin-bottom: 1rem;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
         }
         button {
             padding: 10px 20px;
-            background-color: #1DA1F2;
+            background-color: #4B0082; /* Indigo */
             color: white;
             border: none;
+            border-radius: 4px;
             cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #3D0069; /* Darker indigo */
         }
         #status {
-            margin-top: 20px;
+            margin-top: 1rem;
+            font-weight: bold;
+        }
+        .footer {
+            text-align: center;
+            color: #666;
+            font-size: 0.9rem;
+            margin-top: auto;
         }
     </style>
 </head>
 <body>
-    <h1>Tweet Screenshot Downloader</h1>
-    <input type="text" id="tweetUrl" placeholder="Enter tweet URL">
-    <button onclick="getScreenshot()">Get Screenshot</button>
-    <div id="status"></div>
+    <div class="container">
+        <h1>TweetCapture</h1>
+        <input type="text" id="tweetUrl" placeholder="Paste tweet URL here">
+        <button onclick="getScreenshot()">Capture Tweet</button>
+        <div id="status"></div>
+    </div>
+
+    <div class="footer">
+        Created by Shubhankar Kalra
+    </div>
 
     <script>
         function getScreenshot() {
             const tweetUrl = document.getElementById('tweetUrl').value;
             const statusDiv = document.getElementById('status');
-            statusDiv.textContent = 'Processing...';
+            statusDiv.textContent = 'Capturing tweet...';
 
             // Extract tweet ID from URL
             const tweetId = tweetUrl.split('/').pop().split('?')[0];
@@ -46,7 +87,7 @@
             fetch(`/api/tweet/${tweetId}/screenshot`)
                 .then(response => {
                     if (!response.ok) {
-                        throw new Error('Network response was not ok');
+                        throw new Error('Failed to capture tweet');
                     }
                     return response.blob();
                 })
@@ -59,7 +100,7 @@
                     document.body.appendChild(a);
                     a.click();
                     window.URL.revokeObjectURL(url);
-                    statusDiv.textContent = 'Screenshot downloaded!';
+                    statusDiv.textContent = 'Tweet captured and downloaded!';
                 })
                 .catch(error => {
                     console.error('Error:', error);
