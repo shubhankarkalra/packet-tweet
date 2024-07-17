@@ -1,89 +1,27 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PackeTweet</title>
-    <style>
-        body {
-            font-family: 'Arial', sans-serif;
-            background-color: #E6E6FA; /* Light lilac */
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            margin: 0;
-            padding: 20px;
-            box-sizing: border-box;
-        }
-        .container {
-            background-color: white;
-            padding: 2rem;
-            border-radius: 10px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            text-align: center;
-            max-width: 600px;
-            width: 100%;
-            margin-bottom: 2rem;
-        }
-        h1 {
-            color: #4B0082; /* Indigo */
-            margin-bottom: 1.5rem;
-        }
-        input[type="text"] {
-            width: 100%;
-            padding: 10px;
-            margin-bottom: 1rem;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            box-sizing: border-box;
-        }
-        button {
-            padding: 10px 20px;
-            background-color: #4B0082; /* Indigo */
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            transition: background-color 0.3s;
-            margin: 0.5rem;
-        }
-        button:hover {
-            background-color: #3D0069; /* Darker indigo */
-        }
-        #status {
-            margin-top: 1rem;
-            font-weight: bold;
-        }
-        #screenshotContainer {
-            margin-top: 1rem;
-            max-width: 100%;
-            overflow: hidden;
-        }
-        #screenshotImage {
-            max-width: 100%;
-            height: auto;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-        }
-        .footer {
-            text-align: center;
-            color: #666;
-            font-size: 0.9rem;
-            margin-top: auto;
-        }
-    </style>
+    <!-- ... (keep the existing head content) ... -->
 </head>
 <body>
     <div class="container">
         <h1>PackeTweet</h1>
         <input type="text" id="tweetUrl" placeholder="Paste tweet URL here">
-        <button onclick="getScreenshot()">Capture Tweet</button>
+        <button onclick="processTweet()">Process Tweet</button>
         <div id="status"></div>
+        <div class="process-steps">
+            <div class="step" id="step1">
+                <span class="step-icon">⚪</span> Capturing screenshot
+            </div>
+            <div class="step" id="step2">
+                <span class="step-icon">⚪</span> Uploading to S3
+            </div>
+            <div class="step" id="step3">
+                <span class="step-icon">⚪</span> Posting to Instagram
+            </div>
+        </div>
         <div id="screenshotContainer" style="display: none;">
             <img id="screenshotImage" alt="Tweet Screenshot">
-            <button onclick="downloadScreenshot()">Download Screenshot</button>
         </div>
     </div>
 
@@ -92,50 +30,62 @@
     </div>
 
     <script>
-        let screenshotBlob;
+        function updateStepStatus(stepId, status) {
+            const step = document.getElementById(stepId);
+            const icon = step.querySelector('.step-icon');
+            if (status === 'complete') {
+                icon.textContent = '✅';
+                icon.classList.add('complete');
+            } else if (status === 'in-progress') {
+                icon.textContent = '🔄';
+                icon.classList.add('in-progress');
+            }
+        }
 
-        function getScreenshot() {
+        function resetSteps() {
+            for (let i = 1; i <= 3; i++) {
+                const step = document.getElementById(`step${i}`);
+                const icon = step.querySelector('.step-icon');
+                icon.textContent = '⚪';
+                icon.classList.remove('complete', 'in-progress');
+            }
+        }
+
+        function processTweet() {
             const tweetUrl = document.getElementById('tweetUrl').value;
             const statusDiv = document.getElementById('status');
             const screenshotContainer = document.getElementById('screenshotContainer');
-            statusDiv.textContent = 'Capturing tweet...';
+            statusDiv.textContent = 'Processing tweet...';
             screenshotContainer.style.display = 'none';
+            resetSteps();
 
             // Extract tweet ID from URL
             const tweetId = tweetUrl.split('/').pop().split('?')[0];
 
-            fetch(`/api/tweet/${tweetId}/screenshot`)
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error('Failed to capture tweet');
-                    }
-                    return response.blob();
-                })
-                .then(blob => {
-                    screenshotBlob = blob;
-                    const url = window.URL.createObjectURL(blob);
+            updateStepStatus('step1', 'in-progress');
+            fetch(`/api/tweet/${tweetId}/process`, {
+                method: 'POST',
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    updateStepStatus('step1', 'complete');
+                    updateStepStatus('step2', 'complete');
+                    updateStepStatus('step3', 'complete');
+                    statusDiv.textContent = 'Tweet processed and posted to Instagram!';
+                    
+                    // Display the screenshot
                     const img = document.getElementById('screenshotImage');
-                    img.src = url;
+                    img.src = data.screenshotUrl;
                     screenshotContainer.style.display = 'block';
-                    statusDiv.textContent = 'Tweet captured! You can now download the screenshot.';
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    statusDiv.textContent = 'Error: ' + error.message;
-                });
-        }
-
-        function downloadScreenshot() {
-            if (screenshotBlob) {
-                const url = window.URL.createObjectURL(screenshotBlob);
-                const a = document.createElement('a');
-                a.style.display = 'none';
-                a.href = url;
-                a.download = 'tweet_screenshot.png';
-                document.body.appendChild(a);
-                a.click();
-                window.URL.revokeObjectURL(url);
-            }
+                } else {
+                    throw new Error(data.error || 'Failed to process tweet');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                statusDiv.textContent = 'Error: ' + error.message;
+            });
         }
     </script>
 </body>

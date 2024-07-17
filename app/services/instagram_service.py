@@ -6,7 +6,7 @@ class InstagramService:
     def __init__(self):
         self.access_token = os.getenv("INSTAGRAM_ACCESS_TOKEN")
         self.instagram_account_id = os.getenv("INSTAGRAM_ACCOUNT_ID")
-        self.api_base_url = "https://graph.facebook.com/v20.0"
+        self.api_base_url = "https://graph.facebook.com/v12.0"
 
     def post_image(self, image_url, caption):
         # First, create a container for the post
