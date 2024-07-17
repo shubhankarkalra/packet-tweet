@@ -3,3 +3,7 @@ uvicorn
 python-dotenv
 tweepy
 playwright
+celery
+redis
+requests
+boto3
